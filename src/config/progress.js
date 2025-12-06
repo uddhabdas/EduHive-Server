@@ -1,0 +1,9 @@
+const COMPLETION_THRESHOLD = parseFloat(process.env.PROGRESS_COMPLETION_THRESHOLD || "0.9");
+
+module.exports = {
+  COMPLETION_THRESHOLD: Number.isFinite(COMPLETION_THRESHOLD) && COMPLETION_THRESHOLD > 0 && COMPLETION_THRESHOLD <= 1
+    ? COMPLETION_THRESHOLD
+    : 0.9,
+  ALLOW_SKIP_IF_PREV_COMPLETED:
+    String(process.env.ALLOW_SKIP_IF_PREV_COMPLETED || "true").toLowerCase() !== "false",
+};

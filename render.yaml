@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: eduhive-server
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # Add your other environment variables in Render dashboard:
+      # MONGODB_URI, JWT_SECRET, SMTP_*, AWS_*, CORS_ORIGIN
+
