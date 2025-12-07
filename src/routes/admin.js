@@ -19,7 +19,6 @@ function generateOtp() {
 
 async function sendDeleteOtpEmail(email, otp, subject, details) {
   try {
-    const textBody = `Your deletion confirmation code is ${otp}. It is valid for 10 minutes.`;
     const htmlBody = getPremiumEmailTemplate({
       title: 'Action Confirmation',
       message: 'Please use the verification code below to confirm your action.',
@@ -27,12 +26,11 @@ async function sendDeleteOtpEmail(email, otp, subject, details) {
       details: details
     });
 
-    const result = await sendEmail({
-      to: email || 'mr.uddhabcharandas@gmail.com',
-      subject: subject || 'EduHive - Deletion OTP',
-      text: textBody,
-      html: htmlBody,
-    });
+    const result = await sendEmail(
+      email || 'mr.uddhabcharandas@gmail.com',
+      subject || 'EduHive - Deletion OTP',
+      htmlBody
+    );
 
     if (!result.success) {
       console.error('Failed to send delete OTP email:', result.error);
@@ -721,23 +719,16 @@ router.post('/settings/payments/otp', adminAuth, async (_req, res) => {
 // Get SMTP settings (read-only from .env)
 router.get('/settings/smtp', adminAuth, async (req, res) => {
   try {
-    const { getSmtpSettings } = require('../utils/emailService');
-    const settings = await getSmtpSettings();
-    
-    // Mask password for display
-    const passMasked = settings.pass ? `${settings.pass.slice(0, 2)}***${settings.pass.slice(-2)}` : '';
-    
+    const from = process.env.SMTP_FROM || '';
+    const fromName = process.env.SMTP_FROM_NAME || 'EduHive';
+    const hasApiKey = !!process.env.BREVO_API_KEY;
     return res.json({
-      host: settings.host,
-      port: settings.port,
-      user: settings.user,
-      passMasked: passMasked,
-      from: settings.from,
-      fromName: settings.fromName,
-      secure: settings.secure,
-      configured: !!(settings.host && settings.user && settings.pass),
-      readOnly: true, // Indicate these settings are read-only
-      message: 'SMTP settings are configured via .env file. Update SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_FROM_NAME, and SMTP_SECURE in your .env file.',
+      provider: 'Brevo HTTP API',
+      from,
+      fromName,
+      configured: !!from && hasApiKey,
+      readOnly: true,
+      message: 'Emails are sent via Brevo HTTP API. Configure BREVO_API_KEY, SMTP_FROM, and SMTP_FROM_NAME in your environment.',
     });
   } catch (e) {
     return res.status(500).json({ error: 'Server error' });
@@ -760,9 +751,18 @@ router.post('/settings/smtp/otp', adminAuth, async (req, res) => {
 
 // Test SMTP connection - DISABLED
 router.post('/settings/smtp/test', adminAuth, async (req, res) => {
-  return res.status(403).json({ 
-    error: 'SMTP test is disabled. SMTP settings should be configured via .env file.' 
-  });
+  try {
+    const to = req.body?.to || process.env.SMTP_FROM || '';
+    if (!process.env.BREVO_API_KEY || !to) {
+      return res.status(400).json({ error: 'BREVO_API_KEY and SMTP_FROM must be set' });
+    }
+    const html = getPremiumEmailTemplate({ title: 'Test Email', message: 'This is a test email.' });
+    const result = await sendEmail(to, 'SMTP Settings Test', html);
+    if (!result.success) return res.status(500).json({ error: result.error || 'Failed to send test email' });
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // ========== VIDEO UPLOAD ==========

@@ -13,7 +13,6 @@ const { sendEmail } = require('../utils/emailService');
 async function sendPurchaseEmail(to, name, courseTitle, amount, transactionId) {
   try {
     const subject = `Purchase Confirmed: ${courseTitle}`;
-    const text = `Hi ${name || ''},\n\nYou have successfully purchased/enrolled in: ${courseTitle}.\nAmount: ₹${amount}.\nTransaction: ${transactionId}.\n\nThank you!\nEduHive`;
     
     const html = getPurchaseTemplate({
       name: name || '',
@@ -23,12 +22,7 @@ async function sendPurchaseEmail(to, name, courseTitle, amount, transactionId) {
       date: new Date().toLocaleDateString()
     });
 
-    const result = await sendEmail({
-      to,
-      subject,
-      text,
-      html
-    });
+    const result = await sendEmail(to, subject, html);
 
     if (!result.success) {
       console.error('Failed to send purchase email:', result.error);

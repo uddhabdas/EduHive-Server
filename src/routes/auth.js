@@ -5,26 +5,12 @@ const crypto = require('crypto');
 const path = require('path');
 const User = require('../models/User');
 const { getOtpTemplate, getWelcomeTemplate } = require('../utils/emailTemplates');
-const { createTransporter, getEmailFrom, isSmtpConfigured, sendEmail } = require('../utils/emailService');
+const { sendEmail } = require('../utils/emailService');
 
 const { auth } = require('../middleware/auth');
 const router = express.Router();
 
-// Verify SMTP on startup
-(async () => {
-  try {
-    if (await isSmtpConfigured()) {
-      const transporter = await createTransporter();
-      if (transporter) {
-        transporter.verify().then(() => {
-          console.log('SMTP ready');
-        }).catch((e) => {
-          console.error('SMTP verify failed:', e && e.message ? e.message : e);
-        });
-      }
-    }
-  } catch (_) {}
-})();
+
 
 function generateOtp() {
   return String(Math.floor(1000 + Math.random() * 9000));
@@ -40,12 +26,7 @@ async function sendOtpEmail(email, otp) {
       expiryMin: 10
     });
 
-    const result = await sendEmail({
-      to: email,
-      subject: 'EduHive - Email Verification OTP',
-      text: textBody,
-      html: htmlBody,
-    });
+    const result = await sendEmail(email, 'EduHive - Email Verification OTP', htmlBody);
 
     if (!result.success) {
       console.error('Failed to send OTP email:', result.error);
@@ -69,12 +50,7 @@ async function sendLogoutOtpEmail(email, otp) {
       expiryMin: 10
     });
 
-    const result = await sendEmail({
-      to: email,
-      subject: 'EduHive - Login Unlock OTP',
-      text: textBody,
-      html: htmlBody,
-    });
+    const result = await sendEmail(email, 'EduHive - Login Unlock OTP', htmlBody);
 
     if (!result.success) {
       console.error('Failed to send logout OTP email:', result.error);
@@ -98,12 +74,7 @@ async function sendWelcomeEmail(email, name) {
       dashboardUrl: 'https://eduhive.com/dashboard'
     });
 
-    const result = await sendEmail({
-      to: email,
-      subject,
-      text: textBody,
-      html: htmlBody,
-    });
+    const result = await sendEmail(email, subject, htmlBody);
 
     if (!result.success) {
       console.error('Failed to send welcome email:', result.error);
